@@ -47,7 +47,7 @@ class _af_loss:
       i_con_loss = get_con_loss(inputs, outputs, opt["i_con"], mask_1d=binder_id, mask_1b=target_id)
 
     # Sequence fixing loss
-    if "target_aa" in self.opt:
+    if "soft_fixed_aa" in self.opt:
         aux["losses"]["seq_cross_ent"] = get_aa_loss(inputs, 
                                         self.opt["soft_fixed_pos"], 
                                         self.opt["soft_fixed_aa"])    
