@@ -48,7 +48,7 @@ class _af_loss:
 
     # Sequence fixing loss
     if "target_aa" in self.opt:
-        aux["losses"]["aa"] = get_aa_loss(inputs, 
+        aux["losses"]["seq_cross_ent"] = get_aa_loss(inputs, 
                                         self.opt["soft_fixed_pos"], 
                                         self.opt["soft_fixed_aa"])    
 
