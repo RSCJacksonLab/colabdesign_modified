@@ -232,7 +232,7 @@ class _af_design:
     if aux is None: aux = self.aux
     keys = ["models","recycles","hard","soft","temp","seqid","loss",
             "seq_ent","mlm","helix","pae","i_pae","exp_res","con","i_con",
-            "sc_fape","sc_rmsd","dgram_cce","fape","plddt","ptm"]
+            "sc_fape","sc_rmsd","dgram_cce","fape","plddt","ptm","seq_cross_ent"]
     
     if "i_ptm" in aux["log"]:
       if len(self._lengths) > 1:

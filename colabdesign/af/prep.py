@@ -247,7 +247,7 @@ class _af_prep:
       # binder redesign
       self._wt_aatype = self._pdb["batch"]["aatype"][self._target_len:]
       self.opt["weights"].update({"dgram_cce":1.0, "rmsd":0.0, "fape":0.0,
-                                  "con":0.0, "i_con":0.0, "i_pae":0.0})
+                                  "con":0.0, "i_con":0.0, "i_pae":0.0, "seq_cross_ent":0.0})
     else:
       # binder hallucination
       self._pdb["batch"] = make_fixed_size(self._pdb["batch"], num_res=sum(self._lengths))
