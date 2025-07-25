@@ -126,9 +126,9 @@ class design_model:
     self._inputs["bias"] = b 
 
     # Set specific amino acids at specific positions, if provided
-    if "soft_fixed_pos" in self.opt and "soft_fixed_aa" in self.opt and self.opt['initialise_seq'] == True:
-      soft_fixed_pos = self.opt["soft_fixed_pos"]
-      soft_fixed_aa = self.opt["soft_fixed_aa"]
+    if "soft_fixed_pos" in self.mods and "soft_fixed_aa" in self.mods and self.mods['initialise_seq'] == True:
+      soft_fixed_pos = self.mods["soft_fixed_pos"]
+      soft_fixed_aa = self.mods["soft_fixed_aa"]
 
       # Create one-hot encoded vectors for the target AAs
       for i, pos in enumerate(soft_fixed_pos):
