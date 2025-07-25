@@ -48,7 +48,7 @@ class _af_loss:
 
     # Sequence fixing loss
     if "soft_fixed_aa" in self.opt:
-        aux["losses"]["seq_cross_ent"] = get_aa_loss(inputs, 
+        aux["losses"]["seq_cross_ent"] = get_seq_cross_ent_loss(inputs, 
                                         self.opt["soft_fixed_pos"], 
                                         self.opt["soft_fixed_aa"])    
 
@@ -345,10 +345,10 @@ def _get_helix_loss(dgram, dgram_bins, offset=None, mask_2d=None, **kwargs):
 ####################
 # loss functions
 ####################
-def get_aa_loss(inputs, target_pos, target_aa):
+def get_seq_cross_ent_loss(inputs, soft_fixed_pos, soft_fixed_aa):
     '''Amino acid specific cross-entropy loss'''
-    logits = inputs["seq"]["logits"][:, target_pos]
-    target = jax.nn.one_hot(target_aa, logits.shape[-1])
+    logits = inputs["seq"]["logits"][:, soft_fixed_pos]
+    target = jax.nn.one_hot(soft_fixed_aa, logits.shape[-1])
     loss = -(target * jax.nn.log_softmax(logits)).sum(-1)
     return loss.mean()
 
