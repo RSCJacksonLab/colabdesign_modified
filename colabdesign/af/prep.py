@@ -174,19 +174,22 @@ class _af_prep:
     self._prep_model(**kwargs)
 
   def _prep_binder(self, pdb_filename,
-                   target_chain="A", binder_len=50,                                         
-                   rm_target = False,
-                   rm_target_seq = False,
-                   rm_target_sc = False,
-                   
-                   # if binder_chain is defined
-                   binder_chain=None,
-                   rm_binder=True,
-                   rm_binder_seq=True,
-                   rm_binder_sc=True,
-                   rm_template_ic=False,
-                                      
-                   hotspot=None, ignore_missing=True, **kwargs):
+                 target_chain="A", binder_len=50,                                         
+                 rm_target = False,
+                 rm_target_seq = False,
+                 rm_target_sc = False,
+                 
+                 # if binder_chain is defined
+                 binder_chain=None,
+                 rm_binder=True,
+                 rm_binder_seq=True,
+                 rm_binder_sc=True,
+                 rm_template_ic=False,
+                 
+                 # new parameter for fixing positions
+                 fix_pos=None,
+                                    
+                 hotspot=None, ignore_missing=True, **kwargs):
     '''
     prep inputs for binder design
     ---------------------------------------------------
@@ -198,6 +201,8 @@ class _af_prep:
     -rm_[binder/target]_seq = remove sequence info from template
     -rm_[binder/target]_sc  = remove sidechain info from template
     -ignore_missing=True - skip positions that have missing density (no CA coordinate)
+    -fix_pos="1,2-10" - specify which positions to keep fixed in the sequence when using
+                       binder template (similar to fixbb protocol)
     ---------------------------------------------------
     '''
     redesign = binder_chain is not None
@@ -228,6 +233,15 @@ class _af_prep:
     # gather hotspot info
     if hotspot is not None:
       self.opt["hotspot"] = prep_pos(hotspot, **self._pdb["idx"])["pos"]
+      
+    # handle fixed positions
+    if fix_pos is not None and fix_pos != "" and redesign:
+      self._pos_info = prep_pos(fix_pos, **self._pdb["idx"])
+      # Adjust positions to be relative to the binder portion
+      binder_pos = self._pos_info["pos"][self._pos_info["pos"] >= self._target_len]
+      binder_pos = binder_pos - self._target_len
+      self.opt["fix_pos"] = binder_pos
+
 
     if redesign:
       # binder redesign
