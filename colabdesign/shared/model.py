@@ -125,6 +125,20 @@ class design_model:
     self._params["seq"] = x
     self._inputs["bias"] = b 
 
+    # Set specific amino acids at specific positions, if provided
+    if "soft_fixed_pos" in self.opt and "soft_fixed_aa" in self.opt and self.opt['initialise_seq'] == True:
+      soft_fixed_pos = self.opt["soft_fixed_pos"]
+      soft_fixed_aa = self.opt["soft_fixed_aa"]
+
+      # Create one-hot encoded vectors for the target AAs
+      for i, pos in enumerate(soft_fixed_pos):
+        aa_idx = soft_fixed_aa[i]
+        if aa_idx < 0 or aa_idx >= shape[-1]:
+          continue  # Skip invalid amino acid indices
+        for n in range(shape[0]):  # For each sequence in the batch
+          x[n, pos, :] = 0
+          x[n, pos, aa_idx] = 1
+
   def _norm_seq_grad(self):
     g = self.aux["grad"]["seq"]
     eff_L = (np.square(g).sum(-1,keepdims=True) > 0).sum(-2,keepdims=True)
