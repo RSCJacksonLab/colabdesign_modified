@@ -46,6 +46,12 @@ class _af_loss:
       target_id = zeros.at[:tL].set(mask[:tL])
       i_con_loss = get_con_loss(inputs, outputs, opt["i_con"], mask_1d=binder_id, mask_1b=target_id)
 
+    # Sequence fixing loss
+    if "target_aa" in self.opt:
+        aux["losses"]["aa"] = get_aa_loss(inputs, 
+                                        self.opt["soft_fixed_pos"], 
+                                        self.opt["soft_fixed_aa"])    
+
     # unsupervised losses
     aux["losses"].update({
       "plddt":   get_plddt_loss(outputs, mask_1d=binder_id), # plddt over binder
@@ -339,6 +345,13 @@ def _get_helix_loss(dgram, dgram_bins, offset=None, mask_2d=None, **kwargs):
 ####################
 # loss functions
 ####################
+def get_aa_loss(inputs, target_pos, target_aa):
+    '''Amino acid specific cross-entropy loss'''
+    logits = inputs["seq"]["logits"][:, target_pos]
+    target = jax.nn.one_hot(target_aa, logits.shape[-1])
+    loss = -(target * jax.nn.log_softmax(logits)).sum(-1)
+    return loss.mean()
+
 def get_dgram_loss(inputs, outputs, copies=1, aatype=None, return_mtx=False):
 
   batch = inputs["batch"]
