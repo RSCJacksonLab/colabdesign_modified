@@ -121,10 +121,6 @@ class design_model:
       
       x = np.where(x.sum(-1,keepdims=True) == 1, x, y)
 
-    # set seq/bias/state
-    self._params["seq"] = x
-    self._inputs["bias"] = b 
-
     # Set specific amino acids at specific positions, if provided
     if "soft_fixed_pos" in self.mods and "soft_fixed_aa" in self.mods and self.mods['initialise_seq'] == True:
       soft_fixed_pos = self.mods["soft_fixed_pos"]
@@ -138,6 +134,10 @@ class design_model:
         for n in range(shape[0]):  # For each sequence in the batch
           x[n, pos, :] = 0
           x[n, pos, aa_idx] = 1
+    
+    # set seq/bias/state
+    self._params["seq"] = x
+    self._inputs["bias"] = b 
 
   def _norm_seq_grad(self):
     g = self.aux["grad"]["seq"]
