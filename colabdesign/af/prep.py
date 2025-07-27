@@ -228,7 +228,7 @@ class _af_prep:
       res_idx = np.append(res_idx, res_idx[-1] + np.arange(binder_len) + 50)
     
     if self.mods["masked_seq"] != None:
-      self._len = len(self.mods["masked_seq"])
+      self._binder_len = len(self.mods["masked_seq"])
     
     self._len = self._binder_len
     self._lengths = [self._target_len, self._binder_len]
