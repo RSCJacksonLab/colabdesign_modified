@@ -54,10 +54,15 @@ class mk_af_model(design_model, _af_inputs, _af_loss, _af_prep, _af_design, _af_
                 "fape_cutoff":10.0}
 
 
-    self.mods = {"soft_fixed_pos": None,      # positions to constrain
-                "soft_fixed_aa": None,       # desired amino acids
-                "initialise_seq": False
+    self.mods = {"soft_fixed_pos": kwargs.pop("soft_fixed_pos",None),      # positions to constrain
+                "soft_fixed_aa": kwargs.pop("soft_fixed_aa",None),       # desired amino acids
+                "initialise_seq": kwargs.pop("initialise_seq",False),
+                "masked_seq": kwargs.pop("masked_seq",None)
                 }
+    
+    if self.mods["masked_seq"] != None and self.mods["soft_fixed_pos"] == None and self.mods["soft_fixed_aa"] == None:
+      self.mods["soft_fixed_aa"] = [aa for i, aa in enumerate(self.mods["masked_seq"]) if aa in 'ACDEFGHIKLMNPQRSTVWY']
+      self.mods["soft_fixed_pos"] = [str(i) for i, aa in enumerate(self.mods["masked_seq"]) if aa in 'ACDEFGHIKLMNPQRSTVWY']
 
     self._params = {}
     self._inputs = {}
