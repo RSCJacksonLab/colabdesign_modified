@@ -205,6 +205,9 @@ class _af_prep:
                        binder template (similar to fixbb protocol)
     ---------------------------------------------------
     '''
+    if self.mods["masked_seq"] != None:
+      binder_len = len(self.mods["masked_seq"])
+    
     redesign = binder_chain is not None
     rm_binder = not kwargs.pop("use_binder_template", not rm_binder)
     
@@ -226,9 +229,6 @@ class _af_prep:
       self._target_len = self._pdb["residue_index"].shape[0]
       self._binder_len = binder_len
       res_idx = np.append(res_idx, res_idx[-1] + np.arange(binder_len) + 50)
-    
-    if self.mods["masked_seq"] != None:
-      self._binder_len = len(self.mods["masked_seq"])
     
     self._len = self._binder_len
     self._lengths = [self._target_len, self._binder_len]
