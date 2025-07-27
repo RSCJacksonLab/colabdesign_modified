@@ -48,6 +48,7 @@ class _af_loss:
 
     # Sequence fixing loss
     if "soft_fixed_aa" in self.mods:
+      if self.mods["soft_fixed_aa"] != None and self.mods["soft_fixed_pos"] != None:
         aux["losses"]["seq_cross_ent"] = get_seq_cross_ent_loss(inputs, 
                                         self.mods["soft_fixed_pos"], 
                                         self.mods["soft_fixed_aa"])    
