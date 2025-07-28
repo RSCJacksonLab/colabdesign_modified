@@ -124,7 +124,7 @@ class design_model:
     # Set specific amino acids at specific positions, if provided
     if "soft_fixed_pos" in self.mods and "soft_fixed_aa" in self.mods and self.mods['initialise_seq'] == True:
       soft_fixed_pos = self.mods["soft_fixed_pos"]
-      soft_fixed_aa = self.mods["soft_fixed_aa"]
+      soft_fixed_aa = [residue_constants.HHBLITS_AA_TO_ID[aa] for aa in self.mods["soft_fixed_aa"]]
 
       # Create one-hot encoded vectors for the target AAs
       for i, pos in enumerate(soft_fixed_pos):
