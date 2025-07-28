@@ -348,8 +348,12 @@ def _get_helix_loss(dgram, dgram_bins, offset=None, mask_2d=None, **kwargs):
 ####################
 def get_seq_cross_ent_loss(inputs, soft_fixed_pos, soft_fixed_aa):
     '''Amino acid specific cross-entropy loss'''
-    logits = inputs["seq"]["logits"][:, soft_fixed_pos]
-    target = jax.nn.one_hot(soft_fixed_aa, logits.shape[-1])
+    # Convert positions to JAX array and amino acids to indices
+    pos_indices = jnp.asarray(soft_fixed_pos, dtype=jnp.int32)
+    aa_indices = jnp.asarray([residue_constants.HHBLITS_AA_TO_ID[aa] for aa in soft_fixed_aa], dtype=jnp.int32)
+    
+    logits = inputs["seq"]["logits"][:, pos_indices]
+    target = jax.nn.one_hot(aa_indices, logits.shape[-1])
     loss = -(target * jax.nn.log_softmax(logits)).sum(-1)
     return loss.mean()
 
