@@ -62,7 +62,7 @@ class mk_af_model(design_model, _af_inputs, _af_loss, _af_prep, _af_design, _af_
     
     if self.mods["masked_seq"] != None and self.mods["soft_fixed_pos"] == None and self.mods["soft_fixed_aa"] == None:
       self.mods["soft_fixed_aa"] = [aa for i, aa in enumerate(self.mods["masked_seq"]) if aa in 'ACDEFGHIKLMNPQRSTVWY']
-      self.mods["soft_fixed_pos"] = [str(i) for i, aa in enumerate(self.mods["masked_seq"]) if aa in 'ACDEFGHIKLMNPQRSTVWY']
+      self.mods["soft_fixed_pos"] = [int(i) for i, aa in enumerate(self.mods["masked_seq"]) if aa in 'ACDEFGHIKLMNPQRSTVWY']
 
     self._params = {}
     self._inputs = {}
