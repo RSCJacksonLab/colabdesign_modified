@@ -10,7 +10,7 @@ from colabdesign.shared.model import design_model
 from colabdesign.shared.utils import Key
 
 from colabdesign.af.prep   import _af_prep
-from colabdesign.af.loss   import _af_loss, get_plddt, get_pae, get_ptm
+from colabdesign.af.loss   import _af_loss, get_plddt, get_pae, get_ptm, get_ptmenergy
 from colabdesign.af.loss   import get_contact_map, get_seq_ent_loss, get_mlm_loss
 from colabdesign.af.utils  import _af_utils
 from colabdesign.af.design import _af_design
@@ -205,7 +205,8 @@ class mk_af_model(design_model, _af_inputs, _af_loss, _af_prep, _af_design, _af_
                   "i_ptm":          get_ptm(inputs, outputs, interface=True), 
                   "cmap":           get_contact_map(outputs, opt["con"]["cutoff"]),
                   "i_cmap":         get_contact_map(outputs, opt["i_con"]["cutoff"]),
-                  "prev":           outputs["prev"]})
+                  "prev":           outputs["prev"],
+                  "ptmenergy":      get_ptmenergy(inputs, outputs)})
 
       #######################################################################
       # LOSS
