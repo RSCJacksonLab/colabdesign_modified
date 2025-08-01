@@ -167,3 +167,55 @@ def predicted_tm_score(logits, breaks, residue_weights = None,
   per_alignment = (predicted_tm_term * normed_residue_mask).sum(-1)
 
   return (per_alignment * residue_weights).max()
+
+def predicted_tm_energy(logits, breaks, asym_id, residue_weights=None, use_jnp=True):
+    """Implementation of pTMEnergy formula with residue weighting.
+    
+    Args:
+        logits: [num_res, num_res, num_bins] the logits output from
+            PredictedAlignedErrorHead.
+        breaks: [num_bins] the error bins.
+        asym_id: [num_res] the asymmetric unit ID - the chain ID.
+        residue_weights: [num_res] the per residue weights to use for the
+            expectation. If None, uniform weights are used.
+        use_jnp: Whether to use JAX numpy or regular numpy.
+    
+    Returns:
+        ptm_energy: The predicted TM energy score.
+    """
+    if use_jnp:
+        import jax.numpy as jnp
+        _np = jnp
+    else:
+        import numpy as np
+        _np = np
+    
+    # Set default residue weights if not provided
+    if residue_weights is None:
+        residue_weights = _np.ones(logits.shape[0])
+    
+    # Compute bin centers and g(d) function
+    bin_centers = _calculate_bin_centers(breaks, use_jnp=use_jnp)
+
+    # Clip num_res to avoid negative/undefined d0.
+    clipped_num_res = _np.maximum(residue_weights.sum(), 19)
+    
+    d0 = 1.24 * (clipped_num_res - 15) ** (1./3) - 1.8
+    g_d = 1 / (1 + _np.square(bin_centers / d0))
+    
+    # Inter-chain mask for set I
+    inter_chain_mask = asym_id[:, None] != asym_id[None, :]
+    
+    # Compute -log(∑ g(d_b) * exp(ℓ_ijb))
+    weighted_exp = g_d * _np.exp(logits)
+    log_sum_exp = _np.log(weighted_exp.sum(-1))
+    
+    # Apply pair-wise residue weighting
+    pair_residue_weights = inter_chain_mask * (residue_weights[None, :] * residue_weights[:, None])
+    
+    # Weighted sum with normalization
+    weighted_sum = (pair_residue_weights * log_sum_exp).sum()
+    total_weight = pair_residue_weights.sum()
+    
+    # Return negative average over weighted inter-chain pairs
+    return -weighted_sum / (_np.maximum(total_weight, 1e-8))

@@ -111,7 +111,7 @@ class _af_design:
     # update log
     self.aux["log"] = {**self.aux["losses"]}
     self.aux["log"]["plddt"] = 1 - self.aux["log"]["plddt"]
-    for k in ["loss","i_ptm","ptm"]: self.aux["log"][k] = self.aux[k]
+    for k in ["loss","i_ptm","ptm", "ptmenergy"]: self.aux["log"][k] = self.aux[k]
     for k in ["hard","soft","temp"]: self.aux["log"][k] = self.opt[k]
 
     # compute sequence recovery
@@ -234,11 +234,13 @@ class _af_design:
             "seq_ent","mlm","helix","pae","i_pae","exp_res","con","i_con",
             "sc_fape","sc_rmsd","dgram_cce","fape","plddt","ptm"]
     
-    if "i_ptm" in aux["log"]:
-      if len(self._lengths) > 1:
-        keys.append("i_ptm")
-      else:
-        aux["log"].pop("i_ptm")
+    binder_confidence_keys = ["i_ptm", "ptmenergy"]
+    for key in binder_confidence_keys:
+      if key in aux["log"]:
+        if len(self._lengths) > 1:
+          keys.append(key)
+        else:
+          aux["log"].pop(key)
 
     print(dict_to_str(aux["log"], filt=self.opt["weights"],
                       print_str=print_str, keys=keys+["rmsd"], ok=["plddt","rmsd"]))

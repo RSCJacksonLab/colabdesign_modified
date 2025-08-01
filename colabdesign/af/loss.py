@@ -211,7 +211,14 @@ def get_ptm(inputs, outputs, interface=False):
     if "asym_id" in pae:
       pae.pop("asym_id")
   return confidence.predicted_tm_score(**pae, use_jnp=True)
-  
+
+def get_ptmenergy(inputs, outputs):
+    pae = {"logits": outputs["predicted_aligned_error"]["logits"],
+           "breaks": outputs["predicted_aligned_error"]["breaks"],
+           "asym_id": inputs["asym_id"]}
+    
+    return confidence.predicted_tm_energy(**pae, use_jnp=True)
+
 def get_dgram_bins(outputs):
   dgram = outputs["distogram"]["logits"]
   if dgram.shape[-1] == 64:
