@@ -55,6 +55,8 @@ class _af_loss:
       # interface
       "i_con":   i_con_loss,
       "i_pae":   get_pae_loss(outputs, mask_1d=binder_id, mask_1b=target_id),
+      #ptmenergy
+      "ptmenergy":get_ptmenergy(inputs, outputs)
     })
 
     # supervised losses
