@@ -2,4 +2,5 @@
 *.pyc
 *.pdb
 */params*
-*/test_scripts*
+test_scripts/
+nohup.out
