@@ -4,6 +4,7 @@ import jax.numpy as jnp
 import numpy as np
 from colabdesign.af.alphafold.common import residue_constants
 from colabdesign.shared.utils import copy_dict, update_dict, Key, dict_to_str, to_float, softmax, categorical, to_list, copy_missing
+from colabdesign.af.prep import get_multi_id
 
 ####################################################
 # AF_DESIGN - design functions
@@ -111,7 +112,8 @@ class _af_design:
     # update log
     self.aux["log"] = {**self.aux["losses"]}
     self.aux["log"]["plddt"] = 1 - self.aux["log"]["plddt"]
-    for k in ["loss","i_ptm","ptm", "ptmenergy"]: self.aux["log"][k] = self.aux[k]
+    for k in ["loss","i_ptm","ptm", "ptmenergy"]: 
+      if k in self.aux: self.aux["log"][k] = self.aux[k]
     for k in ["hard","soft","temp"]: self.aux["log"][k] = self.opt[k]
 
     # compute sequence recovery
@@ -240,7 +242,7 @@ class _af_design:
         if len(self._lengths) > 1:
           keys.append(key)
         else:
-          aux["log"].pop(key)
+          if key in aux["log"]: aux["log"].pop(key)
 
     print(dict_to_str(aux["log"], filt=self.opt["weights"],
                       print_str=print_str, keys=keys+["rmsd"], ok=["plddt","rmsd"]))
@@ -561,3 +563,72 @@ class _af_design:
           (best_loss, self._k) = (loss, i)
           self.set_seq(seq=current_seq, bias=self._inputs["bias"])
           self._save_results(save_best=save_best, verbose=verbose)
+
+  def _run_multispecific(self, num_recycles=None, num_models=None, sample_models=None, models=None,
+                         backprop=True, callback=None, model_nums=None, return_aux=False):
+    '''specialized run function for multispecific design'''
+    
+    # pre-design callbacks
+    for fn in self._callbacks["design"]["pre"]: fn(self)
+
+    # decide which model params to use
+    if model_nums is None:
+      model_nums = self._get_model_nums(num_models, sample_models, models)
+    assert len(model_nums) > 0, "ERROR: no model params defined"
+
+    # initialize total loss and gradients
+    total_loss = 0.0
+    total_grad = jax.tree_util.tree_map(lambda x: jnp.zeros_like(x), self._params)
+    
+    all_aux = []
+
+    # loop through targets
+    for target in self._targets:
+        # context switch
+        self._target_len = target["target_len"]
+        self._binder_len = target["binder_len"]
+        self._lengths = target["lengths"]
+        
+        self._inputs.update({
+            "batch": target["batch"],
+            "residue_index": target["residue_index"],
+            "rm_template_seq": target["rm_template_seq"],
+            "rm_template_sc": target["rm_template_sc"]
+        })
+        self._inputs.update(get_multi_id(self._lengths))
+        if target["hotspot"] is not None:
+            self.opt["hotspot"] = target["hotspot"]
+        
+        # loop through model params
+        auxs = []
+        for n in model_nums:
+            p = self._model_params[n]
+            auxs.append(self._recycle(p, num_recycles=num_recycles, backprop=backprop))
+        
+        auxs = jax.tree_util.tree_map(lambda *x: np.stack(x), *auxs)
+        
+        # average outputs
+        def avg_or_first(x):
+            if np.issubdtype(x.dtype, np.integer): return x[0]
+            else: return x.mean(0)
+        
+        current_aux = jax.tree_util.tree_map(avg_or_first, auxs)
+        
+        # accumulate loss and gradients
+        total_loss += current_aux["loss"] * abs(target['weight'])
+        total_grad = jax.tree_util.tree_map(lambda acc, g: acc + g * target['weight'], total_grad, current_aux["grad"])
+        
+        current_aux["all"] = auxs
+        all_aux.append(current_aux)
+
+    # average aux outputs for logging
+    self.aux = jax.tree_util.tree_map(lambda *x: np.mean(np.stack(x), 0), *all_aux)
+    self.aux["loss"] = total_loss
+    self.aux["grad"] = total_grad
+    self.aux["log"] = {k:v for k,v in self.aux.items() if k in self.opt["weights"]}
+    self.aux["log"]["loss"] = total_loss
+    
+    # post-design callbacks
+    for fn in (self._callbacks["design"]["post"] + to_list(callback)): fn(self)
+    
+    if return_aux: return self.aux
