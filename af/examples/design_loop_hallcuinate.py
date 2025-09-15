@@ -23,8 +23,7 @@ def initialize_model(settings):
     af_model.prep_inputs(pdb_filename=settings["input_pdb"],
                         chain=settings["chains"],
                         hotspot=settings["hotspot_residues"],
-                        binder_len=length,
-                        binder_chain=settings["binder_chain"]
+                        binder_len=length
                         )
     # update contact distances
     af_model.opt["con"].update({"num":settings["intra_contact_number"],"cutoff":settings["intra_contact_distance"],"binary":False,"seqsep":9})
