@@ -50,7 +50,7 @@ def run_optimization(af_model, settings, seed):
     
     if initial_plddt < 0.65:
         print("Initial trajectory pLDDT bad: "+str(initial_plddt))
-        return None, None, None
+        return None
     else:
         print("Initial trajectory pLDDT good, continuing: "+str(initial_plddt))
     # Stage 2: Additional Logits
