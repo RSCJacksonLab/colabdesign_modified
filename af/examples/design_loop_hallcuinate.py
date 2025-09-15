@@ -12,7 +12,7 @@ def load_settings(settings_path):
 def initialize_model(settings):
     clear_mem()
 
-    samples = np.arange(min(target_settings["lengths"]), max(target_settings["lengths"]) + 1)
+    samples = np.arange(min(settings["lengths"]), max(settings["lengths"]) + 1)
     length = np.random.choice(samples)
   
     af_model = mk_afdesign_model(protocol="binder", 
