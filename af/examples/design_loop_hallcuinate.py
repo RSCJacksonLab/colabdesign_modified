@@ -108,16 +108,6 @@ def main():
             
             with open(settings["output"]["fasta_file"], "a") as fasta:
                 fasta.write(f"{header}\n{seq}\n")
-
-            # Save trajectory information
-            pickle_filename = f"{seed}_{loss:.2f}_{plddt:.2f}_{iptm:.2f}_{ptmenergy:.2f}_traj.pkl"
-            pickle_path = os.path.join(settings["output"]["colabdesign_output_directory"], pickle_filename)
-            with open(pickle_path, 'wb') as f:
-                pickle.dump(af_model._tmp["traj"], f)
-            log_filename = f"{seed}_{loss:.2f}_{plddt:.2f}_{iptm:.2f}_{ptmenergy:.2f}_log.pkl"
-            log_path = os.path.join(settings["output"]["colabdesign_output_directory"], log_filename)
-            with open(log_path, 'wb') as f:
-                pickle.dump(af_model._tmp["log"], f)
             successful_designs += 1
 
 if __name__ == "__main__":
