@@ -202,14 +202,19 @@ def predicted_tm_energy(logits, breaks, asym_id, residue_weights=None, use_jnp=T
     
     d0 = 1.24 * (clipped_num_res - 15) ** (1./3) - 1.8
     g_d = 1 / (1 + _np.square(bin_centers / d0))
-    
+    log_g_d = _np.log(_np.maximum(g_d, 1e-20))  # Prevent log(0)
+
     # Inter-chain mask for set I
     inter_chain_mask = asym_id[:, None] != asym_id[None, :]
     
     # Compute -log(∑ g(d_b) * exp(ℓ_ijb))
-    weighted_exp = g_d * _np.exp(logits)
-    log_sum_exp = _np.log(weighted_exp.sum(-1))
-    
+    if use_jnp:
+        from jax.scipy.special import logsumexp
+        log_sum_exp = logsumexp(logits + log_g_d[None, None, :], axis=-1)
+    else:
+        from scipy.special import logsumexp
+        log_sum_exp = logsumexp(logits + log_g_d[None, None, :], axis=-1)
+
     # Apply pair-wise residue weighting
     pair_residue_weights = inter_chain_mask * (residue_weights[None, :] * residue_weights[:, None])
     
