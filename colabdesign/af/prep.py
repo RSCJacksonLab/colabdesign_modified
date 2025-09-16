@@ -393,6 +393,73 @@ class _af_prep:
   
     self._prep_model(**kwargs)
 
+  def _prep_multispecific_binder(self, targets, binder_len=50, **kwargs):
+      '''
+      prep inputs for multispecific binder design
+      ---------------------------------------------------
+      - targets: a list of dictionaries, where each dictionary contains:
+          - 'pdb_filename': path to the pdb file
+          - 'target_chain': chain of the target
+          - 'weight': loss weight for this target (can be negative for repulsion)
+          - 'hotspot': (optional) hotspots on the target
+          - 'rm_target_seq': (optional) remove sequence info from template
+          - 'rm_target_sc': (optional) remove sidechain info from template
+      - binder_len: length of the binder to design
+      ---------------------------------------------------
+      '''
+      self._targets = []
+      self._args["redesign"] = False
+      for target_opts in targets:
+          pdb_filename = target_opts.pop('pdb_filename')
+          chain = target_opts.pop('target_chain')
+          weight = target_opts.pop('weight', 1.0)
+          
+          pdb_info = prep_pdb(pdb_filename, chain=chain, ignore_missing=True)
+          
+          target_len = pdb_info["residue_index"].shape[0]
+          res_idx = np.append(pdb_info["residue_index"], pdb_info["residue_index"][-1] + np.arange(binder_len) + 50)
+          
+          batch = make_fixed_size(pdb_info["batch"], num_res=target_len + binder_len)
+          
+          # configure template rm masks
+          rm = {}
+          rm_opts = {
+              "rm_template_seq": target_opts.get("rm_target_seq", False),
+              "rm_template_sc": target_opts.get("rm_target_sc", False)
+          }
+          for n, x in rm_opts.items():
+              rm[n] = np.full(target_len + binder_len, False)
+              rm[n][:target_len] = x
+
+          hotspot_positions = None
+          if 'hotspot' in target_opts and target_opts['hotspot'] is not None:
+              hotspot_positions = prep_pos(target_opts['hotspot'], **pdb_info["idx"])["pos"]
+
+          target_data = {
+              "batch": batch,
+              "residue_index": res_idx,
+              "target_len": target_len,
+              "binder_len": binder_len,
+              "lengths": [target_len, binder_len],
+              "weight": weight,
+              "hotspot": hotspot_positions,
+              **rm
+          }
+          self._targets.append(target_data)
+
+      # Use the first target to initialize shared properties
+      first_target = self._targets[0]
+      self._len = self._binder_len = first_target["binder_len"]
+      self._lengths = first_target["lengths"]
+      
+      # configure input features
+      self._inputs = self._prep_features(num_res=sum(first_target["lengths"]), num_seq=1)
+      
+      # Set weights
+      self.opt["weights"].update({"plddt": 0.1, "con": 0.0, "i_con": 1.0, "i_pae": 0.0})
+
+      self._prep_model(**kwargs)
+
 #######################
 # utils
 #######################

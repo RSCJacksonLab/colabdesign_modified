@@ -28,7 +28,7 @@ class mk_af_model(design_model, _af_inputs, _af_loss, _af_prep, _af_design, _af_
                debug=False,
                data_dir=".", 
                **kwargs):  
-    assert protocol in ["fixbb","hallucination","binder","partial"]
+    assert protocol in ["fixbb","hallucination","binder","partial", "multispecific"]
 
     self.protocol = protocol
     self._num = kwargs.pop("num_seq",1)
@@ -42,7 +42,7 @@ class mk_af_model(design_model, _af_inputs, _af_loss, _af_prep, _af_design, _af_
                   "alphabet_size":20, 
                   "use_initial_guess":False, "use_initial_atom_pos":False}
 
-    if self.protocol == "binder": self._args["use_templates"] = True
+    if self.protocol in ["binder", "multispecific"]: self._args["use_templates"] = True
 
     self.opt = {"dropout":True, "pssm_hard":False, "learning_rate":0.1, "norm_seq_grad":True,
                 "num_recycles":0, "num_models":1, "sample_models":True,                
@@ -129,9 +129,15 @@ class mk_af_model(design_model, _af_inputs, _af_loss, _af_prep, _af_design, _af_
     #####################################
     # set protocol specific functions
     #####################################
-    idx = ["fixbb","hallucination","binder","partial"].index(self.protocol)
-    self.prep_inputs = [self._prep_fixbb, self._prep_hallucination, self._prep_binder, self._prep_partial][idx]
-    self._get_loss   = [self._loss_fixbb, self._loss_hallucination, self._loss_binder, self._loss_partial][idx]
+    if self.protocol == "multispecific":
+        self.prep_inputs = self._prep_multispecific_binder
+        self._get_loss = self._loss_binder
+        self.run = self._run_multispecific
+    else:
+        idx = ["fixbb","hallucination","binder","partial"].index(self.protocol)
+        self.prep_inputs = [self._prep_fixbb, self._prep_hallucination, self._prep_binder, self._prep_partial][idx]
+        self._get_loss   = [self._loss_fixbb, self._loss_hallucination, self._loss_binder, self._loss_partial][idx]
+
 
   def _get_model(self, cfg, callback=None):
 

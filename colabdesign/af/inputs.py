@@ -21,7 +21,7 @@ class _af_inputs:
     aux.update({"seq":seq, "seq_pseudo":seq["pseudo"]})
     
     # protocol specific modifications to seq features
-    if self.protocol == "binder":
+    if self.protocol in ["binder", "multispecific"]:
       # concatenate target and binder sequence
       seq_target = jax.nn.one_hot(inputs["batch"]["aatype"][:self._target_len],self._args["alphabet_size"])
       seq_target = jnp.broadcast_to(seq_target,(self._num, *seq_target.shape))
