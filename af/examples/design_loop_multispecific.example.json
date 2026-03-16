@@ -48,21 +48,21 @@
   "targets": [
     {
       "name": "igg3",
-      "pdb_filename": "path/to/5W38_igg3fc_all5.pdb",
+      "pdb_filename": "/home/272/ab8507/5W38_igg3fc_all5.pdb",
       "target_chain": "A",
       "weight": 1.0,
       "hotspot": "A248-A255,A310,A380,A382-A385,A424,A426,A428,A432-A438"
     },
     {
       "name": "iga_off_target",
-      "pdb_filename": "path/to/1OW0_igafc_all5.pdb",
+      "pdb_filename": "/home/272/ab8507/1OW0_igafc_all5.pdb",
       "target_chain": "A",
       "weight": -0.2,
       "hotspot": "A254-A260,A316,A382,A384-A389,A431,A433,A439-A445"
     }
   ],
   "output": {
-    "colabdesign_output_directory": "/scratch/xz2/ab8507/igg3_specific",
+    "colabdesign_output_directory": "/scratch/xz2/ab8507/heperanase_active",
     "fasta_file": "/scratch/xz2/ab8507/heperanase_active/seqs.fasta"
   }
 }
