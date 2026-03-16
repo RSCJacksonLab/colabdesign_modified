@@ -36,31 +36,42 @@
     "inter_contact_number": 1,
     "inter_contact_distance": 20.0
   },
-  "weights": {
-    "seq_ent": 0.0,
-    "pae": 0.4,
-    "plddt": 0.15,
-    "i_pae": 0.1,
-    "con": 1.0,
-    "i_con": 1.0,
-    "ptmenergy": 0.05,
-    "exp_res": 0.0,
-    "helix": 0.0
-  },
   "targets": [
     {
       "name": "igg3",
       "pdb_filename": "/home/272/ab8507/5W38_igg3fc_all5.pdb",
       "target_chain": "A",
       "weight": 1.0,
-      "hotspot": "A248-A255,A310,A380,A382-A385,A424,A426,A428,A432-A438"
+      "hotspot": "A248-A255,A310,A380,A382-A385,A424,A426,A428,A432-A438",
+      "weights": {
+        "seq_ent": 0.0,
+        "pae": 0.4,
+        "plddt": 0.15,
+        "i_pae": 0.1,
+        "con": 1.0,
+        "i_con": 1.0,
+        "ptmenergy": 0.05,
+        "exp_res": 0.0,
+        "helix": 0.0
+      }
     },
     {
       "name": "iga_off_target",
       "pdb_filename": "/home/272/ab8507/1OW0_igafc_all5.pdb",
       "target_chain": "A",
       "weight": -0.2,
-      "hotspot": "A254-A260,A316,A382,A384-A389,A431,A433,A439-A445"
+      "hotspot": "A254-A260,A316,A382,A384-A389,A431,A433,A439-A445",
+      "weights": {
+        "seq_ent": 0.0,
+        "pae": 0.4,
+        "plddt": 0.15,
+        "i_pae": 0.1,
+        "con": 1.0,
+        "i_con": 1.0,
+        "ptmenergy": 0.05,
+        "exp_res": 0.0,
+        "helix": 0.0
+      }
     }
   ],
   "output": {

@@ -579,11 +579,17 @@ class _af_design:
     # initialize total loss and gradients
     total_loss = 0.0
     total_grad = jax.tree_util.tree_map(lambda x: jnp.zeros_like(x), self._params)
+    base_weights = copy_dict(self.opt["weights"])
     
     all_aux = []
 
     # loop through targets
     for target in self._targets:
+        target_weights = copy_dict(base_weights)
+        if target.get("weights") is not None:
+            target_weights.update(target["weights"])
+        self.opt["weights"] = target_weights
+
         # context switch
         self._target_len = target["target_len"]
         self._binder_len = target["binder_len"]
@@ -598,6 +604,8 @@ class _af_design:
         self._inputs.update(get_multi_id(self._lengths))
         if target["hotspot"] is not None:
             self.opt["hotspot"] = target["hotspot"]
+        else:
+            self.opt.pop("hotspot", None)
         
         # loop through model params
         auxs = []
@@ -622,10 +630,20 @@ class _af_design:
         all_aux.append(current_aux)
 
     # average aux outputs for logging
+    self.opt["weights"] = base_weights
     self.aux = jax.tree_util.tree_map(lambda *x: np.mean(np.stack(x), 0), *all_aux)
     self.aux["loss"] = total_loss
     self.aux["grad"] = total_grad
-    self.aux["log"] = {k:v for k,v in self.aux.items() if k in self.opt["weights"]}
+    self.aux["all"] = all_aux
+    self.aux["log"] = {**self.aux["losses"]}
+    if "plddt" in self.aux["log"]:
+      self.aux["log"]["plddt"] = 1 - self.aux["log"]["plddt"]
+    for k in ["loss","i_ptm","ptm","ptmenergy"]:
+      if k in self.aux: self.aux["log"][k] = self.aux[k]
+    for k in ["hard","soft","temp"]: self.aux["log"][k] = self.opt[k]
+    self.aux["log"] = to_float(self.aux["log"])
+    self.aux["log"].update({"recycles":int(self.aux["num_recycles"]),
+                            "models":model_nums})
     self.aux["log"]["loss"] = total_loss
     
     # post-design callbacks

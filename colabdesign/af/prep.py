@@ -402,6 +402,7 @@ class _af_prep:
           - 'pdb_filename': path to the pdb file
           - 'target_chain': chain of the target
           - 'weight': loss weight for this target (can be negative for repulsion)
+          - 'weights': per-target loss-term weights
           - 'hotspot': (optional) hotspots on the target
           - 'rm_target_seq': (optional) remove sequence info from template
           - 'rm_target_sc': (optional) remove sidechain info from template
@@ -417,6 +418,7 @@ class _af_prep:
           pdb_filename = target_opts.pop('pdb_filename')
           chain = target_opts.pop('target_chain')
           weight = target_opts.pop('weight', 1.0)
+          weights = target_opts.pop('weights', None)
           
           pdb_info = prep_pdb(pdb_filename, chain=chain, ignore_missing=True)
           
@@ -446,6 +448,7 @@ class _af_prep:
               "binder_len": binder_len,
               "lengths": [target_len, binder_len],
               "weight": weight,
+              "weights": weights,
               "hotspot": hotspot_positions,
               **rm
           }

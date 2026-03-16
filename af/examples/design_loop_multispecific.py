@@ -58,7 +58,6 @@ def validate_settings(settings):
         "targets",
         "iterations",
         "contact",
-        "weights",
         "output",
     ]
     missing = [key for key in required_top_level if key not in settings]
@@ -83,6 +82,14 @@ def validate_settings(settings):
             "Multispecific binder design currently expects all targets to have "
             f"the same parsed length. Got lengths: {lengths}"
         )
+
+    settings["weights"] = normalize_weights(settings.get("weights"))
+    for index, target in enumerate(targets):
+        target["weights"] = merge_weight_settings(
+            settings["weights"], target.get("weights")
+        )
+        if "weight" in target:
+            target["weight"] = float(target["weight"])
 
     binder_sequence_init = settings.get("binder_sequence_init")
     if binder_sequence_init in {"", None}:
@@ -116,12 +123,34 @@ def validate_settings(settings):
         )
 
 
-def normalize_weights(weight_settings):
-    weights = DEFAULT_WEIGHTS.copy()
+def normalize_weight_overrides(weight_settings):
+    if weight_settings is None:
+        return {}
+
+    overrides = {}
+    unknown_keys = []
     for key, value in weight_settings.items():
         canonical_key = WEIGHT_ALIASES.get(key, key)
-        if canonical_key in weights:
-            weights[canonical_key] = value
+        if canonical_key in DEFAULT_WEIGHTS:
+            overrides[canonical_key] = value
+        else:
+            unknown_keys.append(key)
+
+    if unknown_keys:
+        raise ValueError(f"Unknown weight keys: {sorted(unknown_keys)}")
+
+    return overrides
+
+
+def normalize_weights(weight_settings):
+    weights = DEFAULT_WEIGHTS.copy()
+    weights.update(normalize_weight_overrides(weight_settings))
+    return weights
+
+
+def merge_weight_settings(base_weights, weight_overrides):
+    weights = base_weights.copy()
+    weights.update(normalize_weight_overrides(weight_overrides))
     return weights
 
 
