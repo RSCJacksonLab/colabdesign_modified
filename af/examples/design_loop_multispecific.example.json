@@ -1,10 +1,10 @@
 {
-  "data_dir": ".",
-  "num_designs": 2,
-  "binder_length": 30,
+  "data_dir": "/scratch/xz2/colabfold_params/",
+  "num_designs": 100,
+  "binder_length": 62,
   "binder_sequence_init": null,
   "initial_plddt_threshold": 0.65,
-  "use_multimer": false,
+  "use_multimer": true,
   "model": {
     "recycle_mode": "sample",
     "num_recycles": 0,
@@ -21,18 +21,18 @@
     "dropout": true
   },
   "iterations": {
-    "initial_logit": 50,
-    "logit": 120,
-    "soft": 60,
-    "hard": 20,
-    "semigreedy": 32,
+    "initial_logit": 100,
+    "logit": 50,
+    "soft": 75,
+    "hard": 5,
+    "semigreedy": 10,
     "semigreedy_tries": 10
   },
   "contact": {
     "intra_contact_number": 2,
     "intra_contact_distance": 14.0,
     "inter_contact_number": 1,
-    "inter_contact_distance": 21.6875
+    "inter_contact_distance": 20.0
   },
   "weights": {
     "seq_ent": 0.0,
@@ -62,7 +62,7 @@
     }
   ],
   "output": {
-    "colabdesign_output_directory": "af/examples/output/multispecific",
-    "fasta_file": "af/examples/output/multispecific/designs.fasta"
+    "colabdesign_output_directory": "/scratch/xz2/ab8507/igg3_specific",
+    "fasta_file": "/scratch/xz2/ab8507/heperanase_active/seqs.fasta"
   }
 }
