@@ -1,0 +1,68 @@
+{
+  "data_dir": ".",
+  "num_designs": 2,
+  "binder_length": 30,
+  "binder_sequence_init": null,
+  "initial_plddt_threshold": 0.65,
+  "use_multimer": false,
+  "model": {
+    "recycle_mode": "sample",
+    "num_recycles": 0,
+    "num_models": 1,
+    "sample_models": false,
+    "model_names": [
+      "model_1_ptm"
+    ]
+  },
+  "optimizer": {
+    "method": "sgd",
+    "learning_rate": 0.1,
+    "norm_seq_grad": true,
+    "dropout": true
+  },
+  "iterations": {
+    "initial_logit": 50,
+    "logit": 120,
+    "soft": 60,
+    "hard": 20,
+    "semigreedy": 32,
+    "semigreedy_tries": 10
+  },
+  "contact": {
+    "intra_contact_number": 2,
+    "intra_contact_distance": 14.0,
+    "inter_contact_number": 1,
+    "inter_contact_distance": 21.6875
+  },
+  "weights": {
+    "seq_ent": 0.0,
+    "pae": 0.4,
+    "plddt": 0.15,
+    "i_pae": 0.1,
+    "con": 1.0,
+    "i_con": 1.0,
+    "ptmenergy": 0.05,
+    "exp_res": 0.0,
+    "helix": 0.0
+  },
+  "targets": [
+    {
+      "name": "igg3",
+      "pdb_filename": "path/to/5W38_igg3fc_all5.pdb",
+      "target_chain": "A",
+      "weight": 1.0,
+      "hotspot": "A248-A255,A310,A380,A382-A385,A424,A426,A428,A432-A438"
+    },
+    {
+      "name": "iga_off_target",
+      "pdb_filename": "path/to/1OW0_igafc_all5.pdb",
+      "target_chain": "A",
+      "weight": -0.2,
+      "hotspot": "A254-A260,A316,A382,A384-A389,A431,A433,A439-A445"
+    }
+  ],
+  "output": {
+    "colabdesign_output_directory": "af/examples/output/multispecific",
+    "fasta_file": "af/examples/output/multispecific/designs.fasta"
+  }
+}
