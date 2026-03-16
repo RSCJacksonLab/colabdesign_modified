@@ -3,6 +3,8 @@
   "num_designs": 100,
   "binder_length": 62,
   "binder_sequence_init": null,
+  "binder_chain": "B",
+  "fix_pos": null,
   "initial_plddt_threshold": 0.65,
   "use_multimer": true,
   "model": {

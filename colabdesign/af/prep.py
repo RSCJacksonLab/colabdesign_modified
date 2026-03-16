@@ -12,7 +12,7 @@ from colabdesign.af.alphafold.model import config
 from colabdesign.shared.protein import _np_get_cb, pdb_to_string
 from colabdesign.shared.prep import prep_pos
 from colabdesign.shared.utils import copy_dict
-from colabdesign.shared.model import order_aa
+from colabdesign.shared.model import aa_order, order_aa
 
 resname_to_idx = residue_constants.resname_to_idx
 idx_to_resname = dict((v,k) for k,v in resname_to_idx.items())
@@ -393,7 +393,8 @@ class _af_prep:
   
     self._prep_model(**kwargs)
 
-  def _prep_multispecific_binder(self, targets, binder_len=50, **kwargs):
+  def _prep_multispecific_binder(self, targets, binder_len=50, binder_seq=None,
+                                 binder_chain=None, fix_pos=None, **kwargs):
       '''
       prep inputs for multispecific binder design
       ---------------------------------------------------
@@ -405,6 +406,9 @@ class _af_prep:
           - 'rm_target_seq': (optional) remove sequence info from template
           - 'rm_target_sc': (optional) remove sidechain info from template
       - binder_len: length of the binder to design
+      - binder_seq: initialized binder sequence used for restart/fixed residues
+      - fix_pos: binder-relative fixed positions, e.g. "1-4,7" or "B1-B4"
+      - binder_chain: optional chain label for parsing chain-prefixed fix_pos
       ---------------------------------------------------
       '''
       self._targets = []
@@ -451,6 +455,18 @@ class _af_prep:
       first_target = self._targets[0]
       self._len = self._binder_len = first_target["binder_len"]
       self._lengths = first_target["lengths"]
+
+      if binder_seq is not None:
+          self._wt_aatype = np.asarray([aa_order[aa] for aa in binder_seq])
+
+      if fix_pos is not None and fix_pos != "":
+          if binder_seq is None:
+              raise ValueError("fix_pos requires binder_seq for multispecific binder design")
+          binder_chain = "A" if binder_chain is None else binder_chain
+          binder_residue = np.arange(1, binder_len + 1)
+          binder_chain_ids = np.asarray([binder_chain] * binder_len)
+          self._pos_info = prep_pos(fix_pos, residue=binder_residue, chain=binder_chain_ids)
+          self.opt["fix_pos"] = self._pos_info["pos"]
       
       # configure input features
       self._inputs = self._prep_features(num_res=sum(first_target["lengths"]), num_seq=1)

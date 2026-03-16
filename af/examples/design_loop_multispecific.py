@@ -10,6 +10,8 @@ import numpy as np
 from colabdesign import clear_mem, mk_afdesign_model
 from colabdesign.af.prep import get_multi_id, prep_pdb
 
+VALID_AMINO_ACIDS = set("ACDEFGHIKLMNPQRSTVWY")
+
 
 DEFAULT_WEIGHTS = {
     "seq_ent": 0.0,
@@ -82,6 +84,37 @@ def validate_settings(settings):
             f"the same parsed length. Got lengths: {lengths}"
         )
 
+    binder_sequence_init = settings.get("binder_sequence_init")
+    if binder_sequence_init in {"", None}:
+        settings["binder_sequence_init"] = None
+    else:
+        if not isinstance(binder_sequence_init, str):
+            raise ValueError("'binder_sequence_init' must be a string when provided")
+        binder_sequence_init = binder_sequence_init.strip().upper()
+        invalid_amino_acids = sorted(
+            {amino_acid for amino_acid in binder_sequence_init if amino_acid not in VALID_AMINO_ACIDS}
+        )
+        if invalid_amino_acids:
+            raise ValueError(
+                "'binder_sequence_init' contains invalid amino acids: "
+                f"{invalid_amino_acids}"
+            )
+        if len(binder_sequence_init) != settings["binder_length"]:
+            raise ValueError(
+                "'binder_sequence_init' length must match 'binder_length'. "
+                f"Got {len(binder_sequence_init)} and {settings['binder_length']}"
+            )
+        settings["binder_sequence_init"] = binder_sequence_init
+
+    fix_pos = settings.get("fix_pos")
+    if fix_pos == "":
+        settings["fix_pos"] = None
+    elif fix_pos is not None and settings.get("binder_sequence_init") is None:
+        raise ValueError(
+            "'fix_pos' requires 'binder_sequence_init' so fixed residues have "
+            "a reference sequence"
+        )
+
 
 def normalize_weights(weight_settings):
     weights = DEFAULT_WEIGHTS.copy()
@@ -106,7 +139,13 @@ def initialize_model(settings):
     )
 
     targets = copy.deepcopy(settings["targets"])
-    af_model.prep_inputs(targets=targets, binder_len=settings["binder_length"])
+    af_model.prep_inputs(
+        targets=targets,
+        binder_len=settings["binder_length"],
+        binder_seq=settings.get("binder_sequence_init"),
+        binder_chain=settings.get("binder_chain"),
+        fix_pos=settings.get("fix_pos"),
+    )
 
     contact_settings = settings["contact"]
     af_model.opt["con"].update(
