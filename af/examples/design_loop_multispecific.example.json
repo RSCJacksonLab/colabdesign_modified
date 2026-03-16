@@ -3,8 +3,8 @@
   "num_designs": 100,
   "binder_length": 62,
   "binder_sequence_init": null,
-  "binder_chain": "B",
-  "fix_pos": null,
+  "binder_chain": "C",
+  "fix_pos": "C1-C4,C7,C11,C15,C18-C19,C22-C25,C28,C31-C33,C35-C36,C38-C62",
   "initial_plddt_threshold": 0.65,
   "use_multimer": true,
   "model": {
@@ -63,19 +63,19 @@
       "hotspot": "A254-A260,A316,A382,A384-A389,A431,A433,A439-A445",
       "weights": {
         "seq_ent": 0.0,
-        "pae": 0.4,
-        "plddt": 0.15,
+        "pae": 0.0,
+        "plddt": 0.0,
         "i_pae": 0.1,
-        "con": 1.0,
-        "i_con": 1.0,
-        "ptmenergy": 0.05,
+        "con": 0.0,
+        "i_con": 0.0,
+        "ptmenergy": 0.1,
         "exp_res": 0.0,
         "helix": 0.0
       }
     }
   ],
   "output": {
-    "colabdesign_output_directory": "/scratch/xz2/ab8507/heperanase_active",
-    "fasta_file": "/scratch/xz2/ab8507/heperanase_active/seqs.fasta"
+    "colabdesign_output_directory": "/scratch/xz2/ab8507igg3_specific",
+    "fasta_file": "/scratch/xz2/ab8507/igg3_specific/seqs.fasta"
   }
 }
