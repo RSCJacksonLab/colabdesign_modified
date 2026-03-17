@@ -7,21 +7,6 @@
   "fix_pos": "C1-C4,C7,C11,C15,C18-C19,C22-C25,C28,C31-C33,C35-C36,C38-C62",
   "initial_plddt_threshold": 0.65,
   "use_multimer": true,
-  "model": {
-    "recycle_mode": "sample",
-    "num_recycles": 0,
-    "num_models": 1,
-    "sample_models": false,
-    "model_names": [
-      "model_1_ptm"
-    ]
-  },
-  "optimizer": {
-    "method": "sgd",
-    "learning_rate": 0.1,
-    "norm_seq_grad": true,
-    "dropout": true
-  },
   "iterations": {
     "initial_logit": 100,
     "logit": 50,
