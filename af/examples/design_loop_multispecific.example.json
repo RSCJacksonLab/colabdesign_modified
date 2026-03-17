@@ -75,7 +75,7 @@
     }
   ],
   "output": {
-    "colabdesign_output_directory": "/scratch/xz2/ab8507igg3_specific",
+    "colabdesign_output_directory": "/scratch/xz2/ab8507/igg3_specific",
     "fasta_file": "/scratch/xz2/ab8507/igg3_specific/seqs.fasta"
   }
 }

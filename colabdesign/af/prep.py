@@ -408,10 +408,20 @@ class _af_prep:
           - 'rm_target_sc': (optional) remove sidechain info from template
       - binder_len: length of the binder to design
       - binder_seq: initialized binder sequence used for restart/fixed residues
+                    if omitted with fix_pos, it will be inferred from binder_chain
+                    in each target PDB and must match across all targets
       - fix_pos: binder-relative fixed positions, e.g. "1-4,7" or "B1-B4"
       - binder_chain: optional chain label for parsing chain-prefixed fix_pos
+                      and inferring binder_seq from target PDBs
       ---------------------------------------------------
       '''
+      if binder_seq is None and fix_pos is not None and fix_pos != "":
+          binder_seq = infer_multispecific_binder_sequence(
+              targets,
+              binder_chain=binder_chain,
+              binder_len=binder_len,
+          )
+
       self._targets = []
       self._args["redesign"] = False
       for target_opts in targets:
@@ -464,7 +474,11 @@ class _af_prep:
 
       if fix_pos is not None and fix_pos != "":
           if binder_seq is None:
-              raise ValueError("fix_pos requires binder_seq for multispecific binder design")
+              raise ValueError(
+                  "fix_pos requires a full-length binder_seq for multispecific "
+                  "binder design, either provided explicitly or inferred from "
+                  "matching binder chains in the target PDBs"
+              )
           binder_chain = "A" if binder_chain is None else binder_chain
           binder_residue = np.arange(1, binder_len + 1)
           binder_chain_ids = np.asarray([binder_chain] * binder_len)
@@ -488,6 +502,62 @@ def repeat_idx(idx, copies=1, offset=50):
 
 def repeat_pos(pos, copies, length):
   return (np.repeat(pos,copies).reshape(-1,copies) + np.arange(copies) * length).T.flatten()
+
+def _aatype_to_sequence(aatype, pdb_filename, chain):
+  invalid = np.where((aatype < 0) | (aatype > max(order_aa)))[0]
+  if invalid.size:
+    bad_positions = ",".join(str(int(i) + 1) for i in invalid[:10])
+    raise ValueError(
+        f"Could not infer a complete sequence for chain '{chain}' in '{pdb_filename}'. "
+        f"Missing or unknown residues at binder-relative positions: {bad_positions}"
+    )
+  return "".join(order_aa[int(i)] for i in aatype)
+
+def infer_multispecific_binder_sequence(targets, binder_chain=None, binder_len=None):
+  if binder_chain in {None, ""}:
+    raise ValueError(
+        "fix_pos without an explicit binder_sequence_init requires 'binder_chain' "
+        "so the binder sequence can be inferred from each target PDB"
+    )
+
+  inferred = []
+  for index, target in enumerate(targets):
+    label = target.get("name", f"target_{index + 1}")
+    pdb_filename = target["pdb_filename"]
+    try:
+      pdb_info = prep_pdb(pdb_filename, chain=binder_chain, ignore_missing=True)
+    except Exception as exc:
+      raise ValueError(
+          f"Failed to read binder chain '{binder_chain}' from target '{label}' "
+          f"({pdb_filename}): {exc}"
+      ) from exc
+
+    sequence = _aatype_to_sequence(
+        np.asarray(pdb_info["batch"]["aatype"]),
+        pdb_filename=pdb_filename,
+        chain=binder_chain,
+    )
+    if binder_len is not None and len(sequence) != binder_len:
+      raise ValueError(
+          f"Inferred binder sequence length for target '{label}' is {len(sequence)}, "
+          f"expected {binder_len} from 'binder_length'"
+      )
+    inferred.append((label, sequence))
+
+  first_label, first_sequence = inferred[0]
+  mismatches = [
+      f"{label}={sequence}"
+      for label, sequence in inferred
+      if sequence != first_sequence
+  ]
+  if mismatches:
+    mismatch_summary = "; ".join([f"{first_label}={first_sequence}", *mismatches])
+    raise ValueError(
+        "Binder sequences inferred from the target PDBs do not match across "
+        f"targets for chain '{binder_chain}': {mismatch_summary}"
+    )
+
+  return first_sequence
 
 def prep_pdb(pdb_filename, chain=None,
              offsets=None, lengths=None,

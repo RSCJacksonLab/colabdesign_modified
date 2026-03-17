@@ -8,7 +8,11 @@ import jax
 import numpy as np
 
 from colabdesign import clear_mem, mk_afdesign_model
-from colabdesign.af.prep import get_multi_id, prep_pdb
+from colabdesign.af.prep import (
+    get_multi_id,
+    infer_multispecific_binder_sequence,
+    prep_pdb,
+)
 
 VALID_AMINO_ACIDS = set("ACDEFGHIKLMNPQRSTVWY")
 
@@ -117,9 +121,10 @@ def validate_settings(settings):
     if fix_pos == "":
         settings["fix_pos"] = None
     elif fix_pos is not None and settings.get("binder_sequence_init") is None:
-        raise ValueError(
-            "'fix_pos' requires 'binder_sequence_init' so fixed residues have "
-            "a reference sequence"
+        settings["binder_sequence_init"] = infer_multispecific_binder_sequence(
+            settings["targets"],
+            binder_chain=settings.get("binder_chain"),
+            binder_len=settings["binder_length"],
         )
 
 
