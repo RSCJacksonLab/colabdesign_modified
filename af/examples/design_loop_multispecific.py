@@ -1,7 +1,6 @@
 import argparse
 import copy
 import json
-import pickle
 from pathlib import Path
 
 import jax
@@ -237,6 +236,27 @@ def get_target_label(target, index):
     )
 
 
+def set_target_context(af_model, target_data):
+    af_model._target_len = target_data["target_len"]
+    af_model._binder_len = target_data["binder_len"]
+    af_model._lengths = target_data["lengths"]
+
+    af_model._inputs.update(
+        {
+            "batch": target_data["batch"],
+            "residue_index": target_data["residue_index"],
+            "rm_template_seq": target_data["rm_template_seq"],
+            "rm_template_sc": target_data["rm_template_sc"],
+        }
+    )
+    af_model._inputs.update(get_multi_id(af_model._lengths))
+
+    if target_data["hotspot"] is not None:
+        af_model.opt["hotspot"] = target_data["hotspot"]
+    else:
+        af_model.opt.pop("hotspot", None)
+
+
 def collect_per_target_metrics(af_model, settings):
     model_settings = settings.get("model", {})
     af_model.set_seq(seq=af_model.get_seqs(get_best=True)[0])
@@ -251,24 +271,7 @@ def collect_per_target_metrics(af_model, settings):
     for index, (target_settings, target_data) in enumerate(
         zip(settings["targets"], af_model._targets)
     ):
-        af_model._target_len = target_data["target_len"]
-        af_model._binder_len = target_data["binder_len"]
-        af_model._lengths = target_data["lengths"]
-
-        af_model._inputs.update(
-            {
-                "batch": target_data["batch"],
-                "residue_index": target_data["residue_index"],
-                "rm_template_seq": target_data["rm_template_seq"],
-                "rm_template_sc": target_data["rm_template_sc"],
-            }
-        )
-        af_model._inputs.update(get_multi_id(af_model._lengths))
-
-        if target_data["hotspot"] is not None:
-            af_model.opt["hotspot"] = target_data["hotspot"]
-        else:
-            af_model.opt.pop("hotspot", None)
+        set_target_context(af_model, target_data)
 
         aux_by_model = []
         for model_num in model_nums:
@@ -403,8 +406,13 @@ def save_outputs(af_model, settings, seed, design_index):
         f"{metrics['i_ptm']:.2f}_{metrics['ptmenergy']:.2f}"
     )
 
-    pdb_path = output_dir / f"{stem}.pdb"
-    af_model.save_pdb(str(pdb_path), get_best=True)
+    for index, (target_settings, target_data, target_aux) in enumerate(
+        zip(settings["targets"], af_model._targets, best_aux["all"])
+    ):
+        set_target_context(af_model, target_data)
+        target_label = get_target_label(target_settings, index)
+        pdb_path = output_dir / f"{stem}_{target_label}.pdb"
+        af_model.save_pdb(str(pdb_path), aux=target_aux)
 
     fasta_path = Path(output_settings["fasta_file"])
     fasta_path.parent.mkdir(parents=True, exist_ok=True)
@@ -421,14 +429,6 @@ def save_outputs(af_model, settings, seed, design_index):
     )
     with open(fasta_path, "a", encoding="utf-8") as handle:
         handle.write(f"{header}\n{seq}\n")
-
-    traj_path = output_dir / f"{stem}_traj.pkl"
-    with open(traj_path, "wb") as handle:
-        pickle.dump(af_model._tmp["traj"], handle)
-
-    log_path = output_dir / f"{stem}_log.pkl"
-    with open(log_path, "wb") as handle:
-        pickle.dump(af_model._tmp["log"], handle)
 
     summary_path = output_dir / f"{stem}_summary.json"
     with open(summary_path, "w", encoding="utf-8") as handle:

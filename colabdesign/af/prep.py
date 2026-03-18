@@ -457,6 +457,7 @@ class _af_prep:
               "target_len": target_len,
               "binder_len": binder_len,
               "lengths": [target_len, binder_len],
+              "label": target_opts.get("name", f"target_{len(self._targets) + 1}"),
               "weight": weight,
               "weights": weights,
               "hotspot": hotspot_positions,

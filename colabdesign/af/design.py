@@ -232,20 +232,32 @@ class _af_design:
 
   def _print_log(self, print_str=None, aux=None):
     if aux is None: aux = self.aux
-    keys = ["models","recycles","hard","soft","temp","seqid","loss",
-            "seq_ent","mlm","helix","pae","i_pae","exp_res","con","i_con",
-            "sc_fape","sc_rmsd","dgram_cce","fape","plddt","ptm"]
-    
-    binder_confidence_keys = ["i_ptm", "ptmenergy"]
-    for key in binder_confidence_keys:
-      if key in aux["log"]:
-        if len(self._lengths) > 1:
+    def get_keys(log, lengths):
+      keys = ["models","recycles","hard","soft","temp","seqid","loss",
+              "seq_ent","mlm","helix","pae","i_pae","exp_res","con","i_con",
+              "sc_fape","sc_rmsd","dgram_cce","fape","plddt","ptm"]
+      for key in ["i_ptm", "ptmenergy"]:
+        if key in log and len(lengths) > 1:
           keys.append(key)
-        else:
-          if key in aux["log"]: aux["log"].pop(key)
+      return keys + ["rmsd"]
 
-    print(dict_to_str(aux["log"], filt=self.opt["weights"],
-                      print_str=print_str, keys=keys+["rmsd"], ok=["plddt","rmsd"]))
+    def print_log_line(log, filt, lengths, line_prefix):
+      local_log = copy_dict(log)
+      print(dict_to_str(local_log, filt=filt, print_str=line_prefix,
+                        keys=get_keys(local_log, lengths), ok=["plddt","rmsd"]))
+
+    if self.protocol == "multispecific" and isinstance(aux.get("all"), list):
+      for n, target_aux in enumerate(aux["all"]):
+        target = self._targets[n] if n < len(self._targets) else {}
+        target_label = target.get("label", f"target_{n+1}")
+        target_prefix = target_label if print_str is None else f"{print_str} {target_label}"
+        target_weights = target.get("weights", self.opt["weights"])
+        target_lengths = target.get("lengths", self._lengths)
+        if "log" in target_aux:
+          print_log_line(target_aux["log"], target_weights, target_lengths, target_prefix)
+      return
+
+    print_log_line(aux["log"], self.opt["weights"], self._lengths, print_str)
 
   def _save_results(self, aux=None, save_best=False,
                     best_metric=None, metric_higher_better=False,
@@ -621,6 +633,16 @@ class _af_design:
             else: return x.mean(0)
         
         current_aux = jax.tree_util.tree_map(avg_or_first, auxs)
+        current_aux["log"] = {**current_aux["losses"]}
+        if "plddt" in current_aux["log"]:
+          current_aux["log"]["plddt"] = 1 - current_aux["log"]["plddt"]
+        for k in ["loss","i_ptm","ptm","ptmenergy"]:
+          if k in current_aux: current_aux["log"][k] = current_aux[k]
+        for k in ["hard","soft","temp"]:
+          current_aux["log"][k] = self.opt[k]
+        current_aux["log"] = to_float(current_aux["log"])
+        current_aux["log"].update({"recycles":int(current_aux["num_recycles"]),
+                                   "models":model_nums})
         
         # accumulate loss and gradients
         total_loss += current_aux["loss"] * abs(target['weight'])
