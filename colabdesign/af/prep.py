@@ -402,6 +402,8 @@ class _af_prep:
           - 'pdb_filename': path to the pdb file
           - 'target_chain': chain of the target
           - 'weight': loss weight for this target (can be negative for repulsion)
+          - 'start_after': (optional) number of completed iterations before
+                           this target contributes; e.g. 100 starts on iter 101
           - 'weights': per-target loss-term weights
           - 'hotspot': (optional) hotspots on the target
           - 'rm_target_seq': (optional) remove sequence info from template
@@ -459,6 +461,7 @@ class _af_prep:
               "lengths": [target_len, binder_len],
               "label": target_opts.get("name", f"target_{len(self._targets) + 1}"),
               "weight": weight,
+              "start_after": max(0, int(target_opts.get("start_after", 0))),
               "weights": weights,
               "hotspot": hotspot_positions,
               **rm

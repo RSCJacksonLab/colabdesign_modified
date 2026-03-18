@@ -251,6 +251,10 @@ class _af_design:
         target = self._targets[n] if n < len(self._targets) else {}
         target_label = target.get("label", f"target_{n+1}")
         target_prefix = target_label if print_str is None else f"{print_str} {target_label}"
+        if not target_aux.get("active", True):
+          start_iter = target_aux.get("start_after", target.get("start_after", 0)) + 1
+          print(f"{target_prefix} inactive (starts at iter {start_iter})")
+          continue
         target_weights = target.get("weights", self.opt["weights"])
         target_lengths = target.get("lengths", self._lengths)
         if "log" in target_aux:
@@ -264,7 +268,7 @@ class _af_design:
                     verbose=True):
     if aux is None: aux = self.aux    
     self._tmp["log"].append(aux["log"])    
-    if (self._k % self._args["traj_iter"]) == 0:
+    if (self._k % self._args["traj_iter"]) == 0 and all(k in aux for k in ["seq","atom_positions","plddt","pae"]):
       # update traj
       traj = {"seq":   aux["seq"]["pseudo"],
               "xyz":   aux["atom_positions"][:,1,:],
@@ -279,6 +283,8 @@ class _af_design:
     if save_best:
       if best_metric is None:
         best_metric = self._args["best_metric"]
+      if best_metric not in aux["log"]:
+        best_metric = "loss"
       metric = float(aux["log"][best_metric])
       if self._args["best_metric"] in ["plddt","ptm","i_ptm","seqid","composite"] or metric_higher_better:
         metric = -metric
@@ -593,10 +599,16 @@ class _af_design:
     total_grad = jax.tree_util.tree_map(lambda x: jnp.zeros_like(x), self._params)
     base_weights = copy_dict(self.opt["weights"])
     
+    active_aux = []
     all_aux = []
 
     # loop through targets
     for target in self._targets:
+        start_after = target.get("start_after", 0)
+        if self._k < start_after:
+            all_aux.append({"active": False, "start_after": start_after})
+            continue
+
         target_weights = copy_dict(base_weights)
         if target.get("weights") is not None:
             target_weights.update(target["weights"])
@@ -648,25 +660,48 @@ class _af_design:
         total_loss += current_aux["loss"] * abs(target['weight'])
         total_grad = jax.tree_util.tree_map(lambda acc, g: acc + g * target['weight'], total_grad, current_aux["grad"])
         
+        current_aux["active"] = True
         current_aux["all"] = auxs
+        active_aux.append(current_aux)
         all_aux.append(current_aux)
 
     # average aux outputs for logging
     self.opt["weights"] = base_weights
-    self.aux = jax.tree_util.tree_map(lambda *x: np.mean(np.stack(x), 0), *all_aux)
-    self.aux["loss"] = total_loss
-    self.aux["grad"] = total_grad
-    self.aux["all"] = all_aux
-    self.aux["log"] = {**self.aux["losses"]}
-    if "plddt" in self.aux["log"]:
-      self.aux["log"]["plddt"] = 1 - self.aux["log"]["plddt"]
-    for k in ["loss","i_ptm","ptm","ptmenergy"]:
-      if k in self.aux: self.aux["log"][k] = self.aux[k]
-    for k in ["hard","soft","temp"]: self.aux["log"][k] = self.opt[k]
-    self.aux["log"] = to_float(self.aux["log"])
-    self.aux["log"].update({"recycles":int(self.aux["num_recycles"]),
-                            "models":model_nums})
-    self.aux["log"]["loss"] = total_loss
+    if active_aux:
+      self.aux = jax.tree_util.tree_map(lambda *x: np.mean(np.stack(x), 0), *active_aux)
+      self.aux["loss"] = total_loss
+      self.aux["grad"] = total_grad
+      self.aux["all"] = all_aux
+      self.aux["log"] = {**self.aux["losses"]}
+      if "plddt" in self.aux["log"]:
+        self.aux["log"]["plddt"] = 1 - self.aux["log"]["plddt"]
+      for k in ["loss","i_ptm","ptm","ptmenergy"]:
+        if k in self.aux: self.aux["log"][k] = self.aux[k]
+      for k in ["hard","soft","temp"]: self.aux["log"][k] = self.opt[k]
+      self.aux["log"] = to_float(self.aux["log"])
+      self.aux["log"].update({"recycles":int(self.aux["num_recycles"]),
+                              "models":model_nums,
+                              "active_targets": len(active_aux)})
+      self.aux["log"]["loss"] = total_loss
+    else:
+      recycle_count = self.opt["num_recycles"] if num_recycles is None else num_recycles
+      self.aux = {
+          "loss": total_loss,
+          "grad": total_grad,
+          "num_recycles": recycle_count,
+          "all": all_aux,
+          "losses": {},
+          "log": {
+              "loss": total_loss,
+              "hard": self.opt["hard"],
+              "soft": self.opt["soft"],
+              "temp": self.opt["temp"],
+              "recycles": int(recycle_count),
+              "models": model_nums,
+              "active_targets": 0,
+          },
+      }
+      self.aux["log"] = to_float(self.aux["log"])
     
     # post-design callbacks
     for fn in (self._callbacks["design"]["post"] + to_list(callback)): fn(self)
