@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 setup(
     name='colabdesign_modified',
-    version='1.0.0',
+    version='1.1.3',
     description='Making Protein Design accessible to all via Google Colab!',
     long_description="Making Protein Design accessible to all via Google Colab!",
     long_description_content_type='text/markdown',
